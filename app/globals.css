@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --color-mw-green: #2ecc71;
+  --color-twitch: #9146ff;
+  --color-raum: #0d1117;
+  --color-panel: #161b22;
+  --color-border: #30363d;
+  --color-glow: #58a6ff;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(145, 70, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(145, 70, 255, 0.6);
+  }
+}
+
+@keyframes ticker {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes cta-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(245, 158, 11, 0);
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2.5s ease-in-out infinite;
+}
+
+.animate-ticker {
+  animation: ticker 28s linear infinite;
+}
+
+.animate-cta-pulse {
+  animation: cta-pulse 2s ease-in-out infinite;
+}
+
+.cta-primary:active {
+  transform: scale(0.98);
+}
+
+body {
+  background: var(--color-raum);
+  color: #e6edf3;
+  font-family: var(--font-sans);
+}
+
+.gradient-maschinenraum {
+  background: radial-gradient(
+      ellipse 80% 50% at 50% -20%,
+      rgba(145, 70, 255, 0.25),
+      transparent
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 100% 50%,
+      rgba(46, 204, 113, 0.12),
+      transparent
+    ),
+    var(--color-raum);
+}
+
+.grid-bg {
+  background-image: linear-gradient(rgba(48, 54, 61, 0.4) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(48, 54, 61, 0.4) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 85%);
+}
