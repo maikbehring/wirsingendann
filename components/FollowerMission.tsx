@@ -8,6 +8,7 @@ interface FollowerMissionProps {
   error?: string | null;
   fetchedAt?: string | null;
   twitchUrl?: string;
+  simulated?: boolean;
 }
 
 export function FollowerMission({
@@ -18,6 +19,7 @@ export function FollowerMission({
   error,
   fetchedAt,
   twitchUrl = "https://www.twitch.tv/mittwaldhosting",
+  simulated,
 }: FollowerMissionProps) {
   const count = current ?? 0;
   const pct =
@@ -59,6 +61,11 @@ export function FollowerMission({
               </>
             ) : null}
           </p>
+          {simulated && !loading && (
+            <p className="mt-2 text-xs font-medium text-amber-400">
+              Vorschau-Modus (Simulation) — nicht die echte Twitch-Zahl
+            </p>
+          )}
           {!loading && !error && (
             <ul className="mt-4 space-y-1 text-sm text-[#8b949e]">
               <li>✓ Kostenlos — Twitch-Account reicht</li>

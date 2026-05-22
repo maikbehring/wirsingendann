@@ -56,4 +56,7 @@ Audit-Stand: Mai 2026 · Fun-Projekt mit bewusst einfachen Trade-offs.
 | `POST /api/songs/[id]/vote` | — | 40/min |
 | `POST /api/admin/login` | Passwort | 5/15 min |
 | `DELETE /api/songs/[id]` | Admin-Cookie | 30/min |
+| `GET/PATCH /api/admin/settings` | Admin-Cookie | PATCH: 20/min |
 | `GET /api/*` | — | — (read-only) |
+
+**Simulation:** Nur per Admin (`data/settings.json`). Öffentlich sichtbar als `followerSimulated` in `/api/stats` — kein Privilegien-Escalation.

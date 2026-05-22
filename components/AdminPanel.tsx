@@ -13,6 +13,10 @@ export function AdminPanel() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [actionError, setActionError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [simulateGoal, setSimulateGoal] = useState(false);
+  const [overrideCount, setOverrideCount] = useState("");
+  const [settingsMsg, setSettingsMsg] = useState("");
+  const [settingsLoading, setSettingsLoading] = useState(false);
 
   const loadSongs = useCallback(async () => {
     const res = await fetch("/api/songs", { cache: "no-store" });
@@ -20,14 +24,51 @@ export function AdminPanel() {
     setSongs(data.songs || []);
   }, []);
 
+  const loadSettings = useCallback(async () => {
+    const res = await fetch("/api/admin/settings", { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json();
+    setSimulateGoal(Boolean(data.settings?.simulateGoalReached));
+    const ov = data.settings?.followerOverride;
+    setOverrideCount(ov === null || ov === undefined ? "" : String(ov));
+  }, []);
+
+  async function patchSettings(
+    patch: Record<string, unknown>,
+    message: string
+  ) {
+    setSettingsLoading(true);
+    setSettingsMsg("");
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSettingsMsg(data.error || "Speichern fehlgeschlagen");
+        return;
+      }
+      setSimulateGoal(Boolean(data.settings?.simulateGoalReached));
+      const ov = data.settings?.followerOverride;
+      setOverrideCount(ov === null || ov === undefined ? "" : String(ov));
+      setSettingsMsg(message);
+    } finally {
+      setSettingsLoading(false);
+    }
+  }
+
   const checkSession = useCallback(async () => {
     const res = await fetch("/api/admin/me", { cache: "no-store" });
     const data = await res.json();
     setConfigured(data.configured ?? false);
     setAuthenticated(data.authenticated ?? false);
     setLoading(false);
-    if (data.authenticated) await loadSongs();
-  }, [loadSongs]);
+    if (data.authenticated) {
+      await Promise.all([loadSongs(), loadSettings()]);
+    }
+  }, [loadSongs, loadSettings]);
 
   useEffect(() => {
     checkSession();
@@ -48,7 +89,7 @@ export function AdminPanel() {
     }
     setPassword("");
     setAuthenticated(true);
-    await loadSongs();
+    await Promise.all([loadSongs(), loadSettings()]);
   }
 
   async function handleLogout() {
@@ -163,6 +204,83 @@ export function AdminPanel() {
           </button>
         </div>
       </div>
+
+      <section className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
+        <h3 className="font-[family-name:var(--font-display)] font-bold text-white">
+          100-Follower simulieren
+        </h3>
+        <p className="mt-1 text-sm text-[#8b949e]">
+          Zeigt auf der Startseite Konfetti + Erfolgs-Banner — nur für Tests/Vorschau.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={settingsLoading}
+            onClick={() =>
+              patchSettings({ simulateGoalReached: true }, "100 Follower simuliert — Startseite öffnen")
+            }
+            className="rounded-lg bg-[var(--color-mw-green)] px-4 py-2 text-sm font-bold text-[#0d1117] disabled:opacity-50"
+          >
+            100 Follower simulieren
+          </button>
+          <button
+            type="button"
+            disabled={settingsLoading}
+            onClick={() =>
+              patchSettings(
+                { simulateGoalReached: false, followerOverride: null },
+                "Simulation beendet — wieder Live-Daten"
+              )
+            }
+            className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm text-[#c9d1d9] disabled:opacity-50"
+          >
+            Simulation aus
+          </button>
+          <Link
+            href="/"
+            target="_blank"
+            className="rounded-lg border border-[var(--color-twitch)] px-4 py-2 text-sm font-semibold text-[var(--color-twitch)]"
+          >
+            Startseite ansehen ↗
+          </Link>
+        </div>
+        {simulateGoal && (
+          <p className="mt-3 text-sm text-amber-300">Simulation ist aktiv.</p>
+        )}
+        <div className="mt-4 flex flex-wrap items-end gap-2 border-t border-[var(--color-border)] pt-4">
+          <div>
+            <label className="block text-xs text-[#8b949e]">
+              Oder Follower-Zahl manuell (optional)
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={9999}
+              value={overrideCount}
+              onChange={(e) => setOverrideCount(e.target.value)}
+              placeholder="z.B. 95"
+              className="mt-1 w-28 rounded-lg border border-[var(--color-border)] bg-[#0d1117] px-3 py-2 text-white"
+            />
+          </div>
+          <button
+            type="button"
+            disabled={settingsLoading}
+            onClick={() => {
+              const n = overrideCount.trim() === "" ? null : Number(overrideCount);
+              patchSettings(
+                { followerOverride: n, simulateGoalReached: false },
+                n === null ? "Override entfernt" : `Anzeige: ${n} Follower`
+              );
+            }}
+            className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm text-[#c9d1d9]"
+          >
+            Zahl setzen
+          </button>
+        </div>
+        {settingsMsg && (
+          <p className="mt-3 text-sm text-[var(--color-mw-green)]">{settingsMsg}</p>
+        )}
+      </section>
 
       {actionError && (
         <p className="rounded-lg bg-red-950/50 px-3 py-2 text-sm text-red-300">

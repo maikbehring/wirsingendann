@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ConversionHero } from "./ConversionHero";
+import { GoalCelebration } from "./GoalCelebration";
 import { FinalCta } from "./FinalCta";
 import { FollowerMission } from "./FollowerMission";
 import { Footer } from "./Footer";
@@ -17,6 +18,9 @@ interface Stats {
   followerChannel: string;
   followerFetchedAt: string | null;
   followerError?: string;
+  followerSimulated?: boolean;
+  goalReached?: boolean;
+  leaderTitle?: string | null;
   twitchUrl: string;
   songCount: number;
   totalVotes: number;
@@ -50,6 +54,9 @@ export function HomePage() {
           followerChannel: data.followerChannel ?? "mittwaldhosting",
           followerFetchedAt: data.followerFetchedAt ?? null,
           followerError: data.followerError,
+          followerSimulated: data.followerSimulated ?? false,
+          goalReached: data.goalReached ?? false,
+          leaderTitle: data.leaderTitle ?? null,
           twitchUrl: data.twitchUrl ?? "https://www.twitch.tv/mittwaldhosting",
           songCount: data.songCount ?? 0,
           totalVotes: data.totalVotes ?? 0,
@@ -81,6 +88,11 @@ export function HomePage() {
     <div className="gradient-maschinenraum min-h-screen pb-24 md:pb-0">
       <Ticker />
 
+      <GoalCelebration
+        active={!statsLoading && Boolean(stats.goalReached)}
+        leaderTitle={stats.leaderTitle}
+      />
+
       <div className="relative">
         <div className="pointer-events-none absolute inset-0 grid-bg" />
 
@@ -103,6 +115,7 @@ export function HomePage() {
             error={stats.followerError}
             fetchedAt={stats.followerFetchedAt}
             twitchUrl={stats.twitchUrl}
+            simulated={stats.followerSimulated}
           />
 
           <HowItWorks />
@@ -112,7 +125,9 @@ export function HomePage() {
               {
                 label: "Follower live",
                 value: statsLoading ? "…" : (stats.followerCurrent ?? "—"),
-                sub: `Ziel: ${stats.followerGoal}`,
+                sub: stats.followerSimulated
+                  ? "Admin-Simulation aktiv"
+                  : `Ziel: ${stats.followerGoal}`,
                 highlight: true,
               },
               {
