@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { Song } from "@/lib/types";
-import { getVoterId, getVotedSongIds, markVoted } from "@/lib/voter";
+import { ensureVoterSession, getVotedSongIds, markVoted } from "@/lib/voter";
 
 function rankEmoji(rank: number): string {
   if (rank === 1) return "🥇";
@@ -35,15 +35,23 @@ export function SongList({ refreshKey, onSuggestClick }: SongListProps) {
 
   useEffect(() => {
     setVotedIds(getVotedSongIds());
+    ensureVoterSession().catch(() => {});
     load();
   }, [load, refreshKey]);
 
   async function handleVote(songId: string) {
     setVoteError(null);
-    const voterId = getVoterId();
+    let voterId: string;
+    try {
+      voterId = await ensureVoterSession();
+    } catch {
+      setVoteError("Session konnte nicht geladen werden — Seite neu laden.");
+      return;
+    }
     const res = await fetch(`/api/songs/${songId}/vote`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ voterId }),
     });
     const data = await res.json();

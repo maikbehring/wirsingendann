@@ -10,6 +10,7 @@ Audit-Stand: Mai 2026 · Fun-Projekt mit bewusst einfachen Trade-offs.
 | **Clickjacking** | `X-Frame-Options: DENY`, CSP `frame-ancestors 'none'` |
 | **MIME-Sniffing** | `X-Content-Type-Options: nosniff` |
 | **Headers (Prod)** | CSP, HSTS, `Referrer-Policy`, kein `X-Powered-By` |
+| **Vote-Schutz** | Signiertes httpOnly-Cookie + IP-Key (1× pro Song) |
 | **API-Spam** | Rate-Limits (Songs, Votes, Admin-Login, Admin-Delete) |
 | **Inputs** | UUID-Format, JSON max. 4 KB, Song-/Vote-Limits |
 | **Admin** | httpOnly-Cookie, HMAC-Session, `timingSafeEqual`, SameSite=strict |
@@ -22,7 +23,7 @@ Audit-Stand: Mai 2026 · Fun-Projekt mit bewusst einfachen Trade-offs.
 
 | Risiko | Details | Empfehlung |
 |--------|---------|------------|
-| **Vote-Manipulation** | `voterId` kommt aus LocalStorage, beliebig erzeugbar | Für Fun-OK; Rate-Limits + max. 50 Votes/Voter. Kein Hochsicherheits-Voting. |
+| **Vote-Bots** | httpOnly Voter-Cookie + 1 Vote/IP/Song (gehasht) | `TRUST_PROXY=true` in Production |
 | **Rate-Limits im RAM** | Pro Instanz, nicht clusterweit | Global: Cloudflare/nginx Rate-Limit |
 | **IP-Spoofing** | `X-Forwarded-For` nur bei `TRUST_PROXY=true` | In Production hinter Proxy `TRUST_PROXY=true` setzen |
 | **Admin-Passwort** | Plaintext-Vergleich in Env, kein bcrypt | Starkes Passwort, separates `ADMIN_SECRET`, nie committen |
@@ -43,6 +44,7 @@ Audit-Stand: Mai 2026 · Fun-Projekt mit bewusst einfachen Trade-offs.
 
 - [ ] `ADMIN_PASSWORD` + separates **`ADMIN_SECRET`** (lang, zufällig)
 - [ ] `TRUST_PROXY=true` nur wenn Reverse-Proxy Client-IP setzt
+- [ ] `VOTER_SECRET` setzen (eigenes Random-Secret)
 - [ ] TLS am Proxy, HSTS greift automatisch in Production
 - [ ] Volume `data/` mit restriktiven Rechten
 - [ ] Secrets nur als Env, nicht im Image
@@ -53,7 +55,7 @@ Audit-Stand: Mai 2026 · Fun-Projekt mit bewusst einfachen Trade-offs.
 | Route | Auth | Rate-Limit |
 |-------|------|------------|
 | `POST /api/songs` | — | 8/h pro IP-Key |
-| `POST /api/songs/[id]/vote` | — | 40/min |
+| `POST /api/songs/[id]/vote` | Voter-Cookie | 12/min pro IP-Key |
 | `POST /api/admin/login` | Passwort | 5/15 min |
 | `DELETE /api/songs/[id]` | Admin-Cookie | 30/min |
 | `GET/PATCH /api/admin/settings` | Admin-Cookie | PATCH: 20/min |

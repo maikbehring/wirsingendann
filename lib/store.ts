@@ -8,8 +8,9 @@ const DATA_FILE = path.join(DATA_DIR, "songs.json");
 
 export const MAX_SONGS = 200;
 export const MAX_VOTES_PER_VOTER = 50;
+export const MAX_VOTES_PER_IP = 30;
 
-const EMPTY_DATA: SongsData = { songs: [], voterIds: {} };
+const EMPTY_DATA: SongsData = { songs: [], voterIds: {}, ipVotes: {} };
 
 async function ensureDataFile(): Promise<SongsData> {
   await fs.mkdir(DATA_DIR, { recursive: true });
@@ -19,6 +20,9 @@ async function ensureDataFile(): Promise<SongsData> {
     if (!Array.isArray(parsed.songs)) parsed.songs = [];
     if (!parsed.voterIds || typeof parsed.voterIds !== "object") {
       parsed.voterIds = {};
+    }
+    if (!parsed.ipVotes || typeof parsed.ipVotes !== "object") {
+      parsed.ipVotes = {};
     }
     return parsed;
   } catch {
@@ -67,11 +71,20 @@ export async function addSong(
 
 export async function voteSong(
   songId: string,
-  voterId: string
+  voterId: string,
+  ipKey: string
 ): Promise<{ ok: boolean; votes?: number; error?: string }> {
   const data = await ensureDataFile();
   const song = data.songs.find((s) => s.id === songId);
   if (!song) return { ok: false, error: "Song nicht gefunden" };
+
+  const ipVoted = data.ipVotes[ipKey] || [];
+  if (ipVoted.includes(songId)) {
+    return { ok: false, error: "Von dieser Verbindung wurde dieser Song schon gevotet" };
+  }
+  if (ipVoted.length >= MAX_VOTES_PER_IP) {
+    return { ok: false, error: "Vote-Limit für diese Verbindung erreicht." };
+  }
 
   const voted = data.voterIds[voterId] || [];
   if (voted.includes(songId)) {
@@ -83,6 +96,7 @@ export async function voteSong(
 
   song.votes += 1;
   data.voterIds[voterId] = [...voted, songId];
+  data.ipVotes[ipKey] = [...ipVoted, songId];
   await writeData(data);
   return { ok: true, votes: song.votes };
 }
@@ -101,6 +115,12 @@ export async function deleteSong(
     data.voterIds[voterId] = data.voterIds[voterId].filter((id) => id !== songId);
     if (data.voterIds[voterId].length === 0) {
       delete data.voterIds[voterId];
+    }
+  }
+  for (const ipKey of Object.keys(data.ipVotes)) {
+    data.ipVotes[ipKey] = data.ipVotes[ipKey].filter((id) => id !== songId);
+    if (data.ipVotes[ipKey].length === 0) {
+      delete data.ipVotes[ipKey];
     }
   }
 

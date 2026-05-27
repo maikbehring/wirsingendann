@@ -1,19 +1,28 @@
-const VOTER_KEY = "wirsingendann-voter-id";
+const VOTED_KEY = "wirsingendann-voted";
 
-export function getVoterId(): string {
-  if (typeof window === "undefined") return "";
-  let id = localStorage.getItem(VOTER_KEY);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(VOTER_KEY, id);
-  }
-  return id;
+let sessionPromise: Promise<string> | null = null;
+
+/** Holt signierte Voter-ID vom Server (httpOnly-Cookie). */
+export async function ensureVoterSession(): Promise<string> {
+  if (sessionPromise) return sessionPromise;
+  sessionPromise = fetch("/api/voter/session", { credentials: "include" })
+    .then(async (res) => {
+      if (!res.ok) throw new Error("Voter-Session fehlgeschlagen");
+      const data = (await res.json()) as { voterId?: string };
+      if (!data.voterId) throw new Error("Keine Voter-ID");
+      return data.voterId;
+    })
+    .catch((err) => {
+      sessionPromise = null;
+      throw err;
+    });
+  return sessionPromise;
 }
 
 export function getVotedSongIds(): string[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem("wirsingendann-voted");
+    const raw = localStorage.getItem(VOTED_KEY);
     return raw ? (JSON.parse(raw) as string[]) : [];
   } catch {
     return [];
@@ -23,9 +32,6 @@ export function getVotedSongIds(): string[] {
 export function markVoted(songId: string): void {
   const voted = getVotedSongIds();
   if (!voted.includes(songId)) {
-    localStorage.setItem(
-      "wirsingendann-voted",
-      JSON.stringify([...voted, songId])
-    );
+    localStorage.setItem(VOTED_KEY, JSON.stringify([...voted, songId]));
   }
 }

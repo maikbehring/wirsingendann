@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
-import {
-  getClientIp,
-  isValidUuid,
-  readJsonBody,
-} from "@/lib/security";
+import { getClientIp, isValidUuid, readJsonBody } from "@/lib/security";
 import { voteSong } from "@/lib/store";
+import {
+  getVoterIdFromRequest,
+  hashClientIp,
+} from "@/lib/voter-session";
 
 export const dynamic = "force-dynamic";
 
@@ -19,8 +19,18 @@ export async function POST(
     return NextResponse.json({ error: "Ungültige Song-ID." }, { status: 400 });
   }
 
+  const voterId = await getVoterIdFromRequest();
+  if (!voterId) {
+    return NextResponse.json(
+      { error: "Keine gültige Voter-Session. Bitte Seite neu laden." },
+      { status: 401 }
+    );
+  }
+
   const ip = getClientIp(request);
-  const ipLimit = checkRateLimit(`vote-ip:${ip}`, 40, 60 * 1000);
+  const ipKey = hashClientIp(ip);
+
+  const ipLimit = checkRateLimit(`vote-ip:${ipKey}`, 12, 60 * 1000);
   if (!ipLimit.allowed) {
     return rateLimitResponse(ipLimit.retryAfterSec ?? 30);
   }
@@ -31,19 +41,14 @@ export async function POST(
   }
 
   const body = parsed.data as Record<string, unknown>;
-  const voterId =
-    typeof body.voterId === "string" ? body.voterId.trim() : "";
+  const bodyVoterId =
+    typeof body.voterId === "string" ? body.voterId.trim().toLowerCase() : "";
 
-  if (!isValidUuid(voterId)) {
-    return NextResponse.json({ error: "Ungültige Voter-ID." }, { status: 400 });
+  if (bodyVoterId && bodyVoterId !== voterId) {
+    return NextResponse.json({ error: "Ungültige Voter-Session." }, { status: 403 });
   }
 
-  const voterLimit = checkRateLimit(`vote-voter:${voterId}`, 30, 60 * 1000);
-  if (!voterLimit.allowed) {
-    return rateLimitResponse(voterLimit.retryAfterSec ?? 30);
-  }
-
-  const result = await voteSong(id, voterId);
+  const result = await voteSong(id, voterId, ipKey);
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 409 });
   }
