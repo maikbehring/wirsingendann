@@ -128,4 +128,4 @@ export async function getTwitchFollowerCount(): Promise<{
 }
 
 export const TWITCH_CHANNEL = TWITCH_LOGIN;
-export const FOLLOWER_GOAL = 100;
+export { FOLLOWER_GOAL, MILESTONE_100 } from "./milestones";

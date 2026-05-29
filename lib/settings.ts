@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { FOLLOWER_GOAL } from "./milestones";
 
 const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), "data");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
@@ -7,7 +8,7 @@ const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 export interface AppSettings {
   /** Ersetzt die Twitch-Live-Zahl (Admin-Vorschau). */
   followerOverride: number | null;
-  /** Ziel als erreicht darstellen (100 Follower + Konfetti). */
+  /** Ziel als erreicht darstellen (250 Follower + Band-Konfetti). */
   simulateGoalReached: boolean;
 }
 

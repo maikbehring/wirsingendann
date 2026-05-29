@@ -1,10 +1,10 @@
 const MESSAGES = [
-  "⚡ Jetzt folgen auf twitch.tv/mittwaldhosting — jeder Follower zählt",
-  "🎵 Song einreichen = 1 Minute · Titel reicht",
-  "🎤 Bei 100 Followern singen Fine & Maik den Hitparaden-Gewinner",
-  "📅 Stream 28.05.2026 · 14–17 Uhr · Maschinenraum live",
-  "▲ Nach dem Einreichen: Freunde zum Voten einladen",
-  "🔥 Du kannst der entscheidende Follower sein",
+  "✓ 100 Follower — Angels (Robbie Williams) zu dritt gesungen",
+  "🎸 Nächstes Ziel: 250 Follower = Auftritt mit Band",
+  "📅 Nächster Stream nach Head in the Cloud · voraussichtlich Juli",
+  "🎵 Songwünsche für die nächste Hitparade — weiter abstimmen",
+  "⚡ Folge twitch.tv/mittwaldhosting für die Band-Mission",
+  "▲ Voten lohnt sich — Gewinner-Song für den nächsten Stream",
 ];
 
 export function Ticker() {

@@ -1,5 +1,7 @@
 "use client";
 
+import { FOLLOWER_GOAL, MILESTONE_100 } from "@/lib/milestones";
+
 interface FollowerMissionProps {
   current: number | null;
   goal: number;
@@ -25,7 +27,7 @@ export function FollowerMission({
   const pct =
     current !== null ? Math.min(100, Math.round((count / goal) * 100)) : 0;
   const remaining = current !== null ? Math.max(0, goal - count) : null;
-  const nextSlot = current !== null ? count + 1 : null;
+  const milestonePct = Math.round((MILESTONE_100 / goal) * 100);
 
   return (
     <section
@@ -41,25 +43,27 @@ export function FollowerMission({
             {loading
               ? "Mission lädt …"
               : remaining !== null && remaining > 0
-                ? `Noch ${remaining} Follower bis zum Singen`
-                : "Ziel erreicht — Singen steht an!"}
+                ? `Noch ${remaining} Follower bis zum Band-Auftritt`
+                : `🎸 ${goal} Follower — Band-Mission erfüllt!`}
           </p>
           <p className="mt-2 text-[#c9d1d9]">
             {error ? (
               <span className="text-amber-400">{error}</span>
             ) : loading ? (
               "Live-Daten von Twitch …"
-            ) : nextSlot ? (
+            ) : remaining !== null && remaining > 0 ? (
               <>
-                Du kannst{" "}
-                <strong className="text-[var(--color-twitch)]">
-                  Follower #{nextSlot}
-                </strong>{" "}
-                sein — folge{" "}
-                <strong className="text-white">@{channel}</strong> und bring uns
-                der Karaoke-Strafe näher.
+                Bei <strong className="text-white">{goal} Followern</strong> auf{" "}
+                <strong className="text-white">@{channel}</strong> treten wir mit
+                Band auf — im Stream nach „Head in the Cloud“ (voraussichtlich
+                Richtung Juli).
               </>
-            ) : null}
+            ) : (
+              <>
+                Ihr habt es geschafft — beim nächsten Stream stehen Band und
+                Maschinenraum auf dem Programm.
+              </>
+            )}
           </p>
           {simulated && !loading && (
             <p className="mt-2 text-xs font-medium text-amber-400">
@@ -68,9 +72,9 @@ export function FollowerMission({
           )}
           {!loading && !error && (
             <ul className="mt-4 space-y-1 text-sm text-[#8b949e]">
-              <li>✓ Kostenlos — Twitch-Account reicht</li>
-              <li>✓ Danach Song einreichen & Freunde zum Voten holen</li>
-              <li>✓ Live-Stream 28.05. aus dem Maschinenraum</li>
+              <li>✓ {MILESTONE_100} Follower: Angels — erledigt</li>
+              <li>🎸 {goal} Follower: Auftritt mit Band</li>
+              <li>📅 Nächster Stream nach Head in the Cloud · ca. Juli</li>
             </ul>
           )}
         </div>
@@ -89,18 +93,25 @@ export function FollowerMission({
 
       <div className="mt-6">
         <div className="mb-2 flex justify-between text-xs text-[#8b949e]">
-          <span>Fortschritt zur 100-Follower-Marke</span>
-          <span>
-            {loading ? "…" : `${pct}%`}
-          </span>
+          <span>Road to {goal} · Band-Auftritt</span>
+          <span>{loading ? "…" : `${pct}%`}</span>
         </div>
-        <div className="h-5 overflow-hidden rounded-full bg-[#21262d]">
+        <div className="relative h-5 overflow-hidden rounded-full bg-[#21262d]">
           <div
-            className={`h-full rounded-full bg-gradient-to-r from-[var(--color-twitch)] via-[#b07cff] to-[var(--color-mw-green)] transition-all duration-700 ${
+            className={`h-full rounded-full bg-gradient-to-r from-[var(--color-mw-green)] via-[var(--color-twitch)] to-[#b07cff] transition-all duration-700 ${
               loading ? "w-1/3 animate-pulse" : ""
             }`}
             style={loading ? undefined : { width: `${pct}%` }}
           />
+          {!loading && (
+            <span
+              className="absolute top-1/2 -translate-y-1/2 text-[10px] font-bold text-white drop-shadow"
+              style={{ left: `calc(${milestonePct}% - 4px)` }}
+              title={`${MILESTONE_100} Follower — Angels gesungen`}
+            >
+              ✓100
+            </span>
+          )}
         </div>
         <p className="mt-2 text-center text-sm text-[#8b949e]">
           {loading ? (
@@ -110,8 +121,8 @@ export function FollowerMission({
               <span className="text-2xl font-bold text-white">{count}</span>
               <span className="text-[#484f58]"> / {goal}</span> Follower
               {fetchedAt && (
-                <span className="block text-xs text-[#484f58] mt-1">
-                  Live-Stand · @{channel}
+                <span className="mt-1 block text-xs text-[#484f58]">
+                  Live · @{channel}
                 </span>
               )}
             </>

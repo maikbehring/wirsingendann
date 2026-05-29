@@ -1,6 +1,6 @@
 "use client";
 
-import { getFollowerCta, getUrgencyHeadline } from "@/lib/conversion";
+import { FOLLOWER_GOAL, getFollowerCta, getUrgencyHeadline } from "@/lib/milestones";
 
 interface ConversionHeroProps {
   remaining: number | null;
@@ -22,20 +22,20 @@ export function ConversionHero({
   onSongClick,
 }: ConversionHeroProps) {
   const headline = loading
-    ? "Lade Live-Mission …"
+    ? "Lade nächste Mission …"
     : getUrgencyHeadline(remaining);
   const twitchCta = getFollowerCta(remaining);
 
   return (
-    <header className="relative mx-auto max-w-5xl px-4 pb-6 pt-10 text-center sm:pt-12">
-      {!loading && remaining !== null && remaining <= 15 && (
-        <p className="mb-4 inline-flex animate-cta-pulse items-center gap-2 rounded-full border border-amber-500/50 bg-amber-500/15 px-4 py-1.5 text-sm font-semibold text-amber-200">
-          🔥 Fast geschafft — jeder Follower zählt jetzt
+    <header className="relative mx-auto max-w-5xl px-4 pb-6 pt-8 text-center sm:pt-10">
+      {!loading && remaining !== null && remaining <= 25 && (
+        <p className="mb-4 inline-flex animate-cta-pulse items-center gap-2 rounded-full border border-[var(--color-twitch)]/50 bg-[var(--color-twitch)]/15 px-4 py-1.5 text-sm font-semibold text-[#c9d1d9]">
+          🎸 Nächstes Ziel: Band-Auftritt bei {FOLLOWER_GOAL} Followern
         </p>
       )}
 
       <p className="mb-3 text-xs font-medium uppercase tracking-widest text-[#8b949e]">
-        wirsingendann.de · Community-Mission
+        wirsingendann.de · Road to {goal}
       </p>
 
       <h1 className="font-[family-name:var(--font-display)] mx-auto max-w-3xl text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl">
@@ -43,10 +43,12 @@ export function ConversionHero({
       </h1>
 
       <p className="mx-auto mt-4 max-w-2xl text-lg text-[#8b949e]">
-        <strong className="text-white">2 Klicks</strong> und du bist dabei: Twitch
-        folgen + Songwunsch einreichen. Bei{" "}
-        <strong className="text-white">{goal} Followern</strong> singen Josefine &
-        Maik den Gewinner-Song aus der Hitparade — live im Maschinenraum.
+        Die 100er-Marke ist geschafft —{" "}
+        <strong className="text-white">Angels</strong> wurde gesungen. Jetzt
+        geht&apos;s Richtung{" "}
+        <strong className="text-white">{goal} Follower</strong>: Dann spielen wir
+        mit Band im nächsten Stream. Songwünsche für die Hitparade laufen
+        weiter.
       </p>
 
       <div className="mx-auto mt-8 flex max-w-lg flex-col gap-3 sm:flex-row sm:justify-center">
@@ -70,12 +72,10 @@ export function ConversionHero({
       </div>
 
       <p className="mt-4 text-xs text-[#484f58]">
-        Kostenlos · kein Login auf dieser Seite ·{" "}
         {loading ? (
           "Live-Zähler lädt …"
         ) : (
           <>
-            aktuell{" "}
             <strong className="text-[#8b949e]">{current ?? "—"}</strong> / {goal}{" "}
             Follower
             {songCount > 0 && (
@@ -89,15 +89,15 @@ export function ConversionHero({
         )}
       </p>
 
-      <div className="mx-auto mt-6 flex max-w-xl flex-wrap justify-center gap-2 text-xs text-[#8b949e]">
-        <span className="rounded-full border border-[var(--color-border)] px-3 py-1">
-          📅 Stream 28.05. · 14–17 Uhr
+      <div className="mx-auto mt-6 flex max-w-2xl flex-wrap justify-center gap-2 text-xs text-[#8b949e]">
+        <span className="rounded-full border border-[var(--color-mw-green)]/40 bg-[var(--color-mw-green)]/10 px-3 py-1 text-[var(--color-mw-green)]">
+          ✓ 100 Follower · Angels gesungen
         </span>
         <span className="rounded-full border border-[var(--color-border)] px-3 py-1">
-          🎤 Gewinner-Song wird gesungen
+          🎸 Ziel: Band bei {goal}
         </span>
         <span className="rounded-full border border-[var(--color-border)] px-3 py-1">
-          ▲ Community votet
+          📅 Nächster Stream · ca. Juli
         </span>
       </div>
     </header>

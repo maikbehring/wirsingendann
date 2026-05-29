@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { FOLLOWER_GOAL } from "@/lib/milestones";
 
 interface GoalCelebrationProps {
   active: boolean;
-  leaderTitle?: string | null;
 }
 
 const COLORS = ["#9146ff", "#2ecc71", "#f0b429", "#ff6b9d", "#58a6ff", "#ffffff"];
+const CONFETTI_KEY = "wirsingendann-confetti-250";
 
 function fireConfetti(canvas: HTMLCanvasElement, durationMs: number) {
   const ctx = canvas.getContext("2d");
@@ -31,7 +32,7 @@ function fireConfetti(canvas: HTMLCanvasElement, durationMs: number) {
     vr: number;
   };
 
-  const particles: Particle[] = Array.from({ length: 160 }, () => ({
+  const particles: Particle[] = Array.from({ length: 180 }, () => ({
     x: Math.random() * canvas.width,
     y: -20 - Math.random() * canvas.height * 0.5,
     vx: (Math.random() - 0.5) * 4,
@@ -80,19 +81,14 @@ function fireConfetti(canvas: HTMLCanvasElement, durationMs: number) {
   };
 }
 
-export function GoalCelebration({ active, leaderTitle }: GoalCelebrationProps) {
+export function GoalCelebration({ active }: GoalCelebrationProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const firedRef = useRef(false);
 
   useEffect(() => {
-    if (!active) {
-      firedRef.current = false;
-      return;
-    }
-    if (firedRef.current || !canvasRef.current) return;
-    firedRef.current = true;
-    const cleanup = fireConfetti(canvasRef.current, 8000);
-    return cleanup;
+    if (!active || !canvasRef.current) return;
+    if (sessionStorage.getItem(CONFETTI_KEY)) return;
+    sessionStorage.setItem(CONFETTI_KEY, "1");
+    return fireConfetti(canvasRef.current, 9000);
   }, [active]);
 
   if (!active) return null;
@@ -108,25 +104,16 @@ export function GoalCelebration({ active, leaderTitle }: GoalCelebrationProps) {
         role="status"
         className="relative z-[101] mx-auto max-w-5xl px-4 pt-4"
       >
-        <div className="animate-goal-banner rounded-2xl border-2 border-[var(--color-mw-green)] bg-gradient-to-r from-[var(--color-twitch)]/30 via-[var(--color-mw-green)]/25 to-[var(--color-twitch)]/30 px-6 py-5 text-center shadow-lg shadow-[var(--color-mw-green)]/20">
+        <div className="animate-goal-banner rounded-2xl border-2 border-[var(--color-twitch)] bg-gradient-to-r from-[var(--color-twitch)]/40 via-[#b07cff]/20 to-[var(--color-mw-green)]/30 px-6 py-5 text-center shadow-lg shadow-[var(--color-twitch)]/25">
           <p className="text-3xl" aria-hidden>
-            🎉🎤🎉
+            🎸🥁🎤
           </p>
           <h2 className="font-[family-name:var(--font-display)] mt-2 text-2xl font-bold text-white sm:text-3xl">
-            100 Follower — Mission erfüllt!
+            {FOLLOWER_GOAL} Follower — wir treten mit Band auf!
           </h2>
           <p className="mt-2 text-[#c9d1d9]">
-            Fine & Maik müssen jetzt singen.{" "}
-            {leaderTitle ? (
-              <>
-                Aktueller Hitparaden-Favorit:{" "}
-                <strong className="text-[var(--color-mw-green)]">
-                  {leaderTitle}
-                </strong>
-              </>
-            ) : (
-              "Reicht Songs ein und votet für den Gewinner-Titel."
-            )}
+            Mission Band: erfüllt. Den nächsten Maschinenraum-Stream gibt&apos;s
+            mit voller Besetzung — Details folgen.
           </p>
         </div>
       </div>

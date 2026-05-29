@@ -2,13 +2,13 @@
 
 Community-Songvote zum Mittwald-Stream **„Live aus dem Maschinenraum: Container Hosting & KI“** (28.05.2026, 14–17 Uhr auf [twitch.tv/mittwaldhosting](https://www.twitch.tv/mittwaldhosting)).
 
-**Mission:** Bei **100 Twitch-Followern** singen Josefine & Maik den Gewinner-Song aus der Hitparade. Diese Seite sammelt Songwünsche und Votes — conversion-orientiert für Follower und Einträge.
+**Mission:** 100 Follower geschafft — *Angels* zu dritt gesungen. Nächstes Ziel: **250 Follower** = Auftritt mit Band im Maschinenraum-Stream. Diese Seite sammelt Songwünsche und Votes für die nächste Hitparade.
 
 ## Features
 
 | Bereich | Beschreibung |
 |--------|----------------|
-| **Twitch-Mission** | Live-Follower-Zähler mit Fortschrittsbalken (Ziel: 100) |
+| **Twitch-Mission** | Live-Follower-Zähler mit Fortschrittsbalken (Ziel: 250, Meilenstein 100) |
 | **Songwünsche** | Titel (Pflicht) + optionaler Spotify-Link |
 | **Hitparade** | Upvoting, eine Stimme pro Song und Browser |
 | **Conversion-UI** | Klare CTAs, Dringlichkeit, 3-Schritte-Funnel, Sticky-Leiste (Mobile) |
