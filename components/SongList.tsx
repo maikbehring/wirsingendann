@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Song } from "@/lib/types";
 import { ensureVoterSession, getVotedSongIds, markVoted } from "@/lib/voter";
+import { VoteCaptchaModal } from "./VoteCaptchaModal";
 
 function rankEmoji(rank: number): string {
   if (rank === 1) return "🥇";
@@ -21,6 +22,13 @@ export function SongList({ refreshKey, onSuggestClick }: SongListProps) {
   const [loading, setLoading] = useState(true);
   const [votedIds, setVotedIds] = useState<string[]>([]);
   const [voteError, setVoteError] = useState<string | null>(null);
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState<string | null>(null);
+  const [captchaEnabled, setCaptchaEnabled] = useState(false);
+  const [pendingVote, setPendingVote] = useState<{
+    songId: string;
+    title: string;
+  } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -37,41 +45,79 @@ export function SongList({ refreshKey, onSuggestClick }: SongListProps) {
     setVotedIds(getVotedSongIds());
     ensureVoterSession().catch(() => {});
     load();
+    fetch("/api/turnstile/config", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((data: { enabled?: boolean; siteKey?: string | null }) => {
+        setCaptchaEnabled(Boolean(data.enabled && data.siteKey));
+        setTurnstileSiteKey(data.siteKey ?? null);
+      })
+      .catch(() => {});
   }, [load, refreshKey]);
 
-  async function handleVote(songId: string) {
-    setVoteError(null);
-    let voterId: string;
-    try {
-      voterId = await ensureVoterSession();
-    } catch {
-      setVoteError("Session konnte nicht geladen werden — Seite neu laden.");
-      return;
-    }
-    const res = await fetch(`/api/songs/${songId}/vote`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ voterId }),
-    });
-    const data = await res.json();
+  const submitVote = useCallback(
+    async (songId: string, turnstileToken?: string) => {
+      setVoteError(null);
+      setSubmitting(true);
+      let voterId: string;
+      try {
+        voterId = await ensureVoterSession();
+      } catch {
+        setVoteError("Session konnte nicht geladen werden — Seite neu laden.");
+        setSubmitting(false);
+        return;
+      }
 
-    if (!res.ok) {
-      setVoteError(data.error);
-      if (res.status === 409) {
+      const body: Record<string, string> = { voterId };
+      if (turnstileToken) body.turnstileToken = turnstileToken;
+
+      try {
+        const res = await fetch(`/api/songs/${songId}/vote`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          setVoteError(data.error ?? "Vote fehlgeschlagen.");
+          if (res.status === 409) {
+            markVoted(songId);
+            setVotedIds(getVotedSongIds());
+          }
+          return;
+        }
+
         markVoted(songId);
         setVotedIds(getVotedSongIds());
+        setSongs((prev) =>
+          [...prev]
+            .map((s) => (s.id === songId ? { ...s, votes: data.votes } : s))
+            .sort((a, b) => b.votes - a.votes)
+        );
+      } finally {
+        setSubmitting(false);
+        setPendingVote(null);
       }
+    },
+    []
+  );
+
+  function handleVoteClick(song: Song) {
+    if (votedIds.includes(song.id) || submitting) return;
+    setVoteError(null);
+
+    if (captchaEnabled && turnstileSiteKey) {
+      setPendingVote({ songId: song.id, title: song.title });
       return;
     }
 
-    markVoted(songId);
-    setVotedIds(getVotedSongIds());
-    setSongs((prev) =>
-      [...prev]
-        .map((s) => (s.id === songId ? { ...s, votes: data.votes } : s))
-        .sort((a, b) => b.votes - a.votes)
-    );
+    void submitVote(song.id);
+  }
+
+  function handleCaptchaVerified(token: string) {
+    if (!pendingVote) return;
+    void submitVote(pendingVote.songId, token);
   }
 
   if (loading) {
@@ -88,122 +134,137 @@ export function SongList({ refreshKey, onSuggestClick }: SongListProps) {
   const leader = songs[0];
 
   return (
-    <div
-      id="hitparade"
-      className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-panel)] p-6"
-    >
-      <h2 className="font-[family-name:var(--font-display)] mb-1 text-xl font-bold text-white">
-        🏆 Live-Hitparade
-      </h2>
-      <p className="mb-5 text-sm text-[#8b949e]">
-        {leader ? (
-          <>
-            Spitzenreiter:{" "}
-            <strong className="text-white">{leader.title}</strong> mit{" "}
-            <strong className="text-[var(--color-mw-green)]">
-              {leader.votes} Votes
-            </strong>{" "}
-            — hol deinen Song nach oben!
-          </>
-        ) : (
-          "Noch leer — der erste Eintrag hat die besten Chancen für den Band-Stream."
-        )}
-      </p>
+    <>
+      <VoteCaptchaModal
+        open={pendingVote !== null}
+        siteKey={turnstileSiteKey ?? ""}
+        songTitle={pendingVote?.title ?? null}
+        onClose={() => !submitting && setPendingVote(null)}
+        onVerified={handleCaptchaVerified}
+      />
 
-      {voteError && (
-        <p className="mb-4 rounded-lg bg-red-950/50 px-3 py-2 text-sm text-red-300">
-          {voteError}
-        </p>
-      )}
-
-      {songs.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[var(--color-mw-green)]/40 bg-[var(--color-mw-green)]/5 py-10 text-center">
-          <p className="text-lg font-semibold text-white">
-            Die Hitparade wartet auf dich
-          </p>
-          <p className="mt-2 text-sm text-[#8b949e]">
-            Erster Song = maximale Sichtbarkeit. Dauert eine Minute.
-          </p>
-          {onSuggestClick && (
-            <button
-              type="button"
-              onClick={onSuggestClick}
-              className="mt-6 rounded-xl bg-[var(--color-mw-green)] px-6 py-3 font-bold text-[#0d1117]"
-            >
-              Jetzt ersten Song einreichen
-            </button>
+      <div
+        id="hitparade"
+        className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-panel)] p-6"
+      >
+        <h2 className="font-[family-name:var(--font-display)] mb-1 text-xl font-bold text-white">
+          🏆 Live-Hitparade
+        </h2>
+        <p className="mb-5 text-sm text-[#8b949e]">
+          {leader ? (
+            <>
+              Spitzenreiter:{" "}
+              <strong className="text-white">{leader.title}</strong> mit{" "}
+              <strong className="text-[var(--color-mw-green)]">
+                {leader.votes} Votes
+              </strong>{" "}
+              — hol deinen Song nach oben!
+            </>
+          ) : (
+            "Noch leer — der erste Eintrag hat die besten Chancen für den Band-Stream."
           )}
-        </div>
-      ) : (
-        <ul className="space-y-3">
-          {songs.map((song, index) => {
-            const voted = votedIds.includes(song.id);
-            const rank = index + 1;
-            return (
-              <li
-                key={song.id}
-                className={`flex flex-wrap items-center gap-3 rounded-xl border px-4 py-4 transition ${
-                  rank === 1
-                    ? "border-[var(--color-twitch)]/50 bg-[var(--color-twitch)]/10 animate-pulse-glow"
-                    : "border-[var(--color-border)] bg-[#0d1117]/60"
-                }`}
-              >
-                <span className="w-10 text-center text-lg font-bold text-[#8b949e]">
-                  {rankEmoji(rank)}
-                </span>
-                <div className="min-w-0 flex-1">
-                  {rank === 1 && (
-                    <span className="mb-1 inline-block rounded text-[10px] font-bold uppercase tracking-wide text-[var(--color-twitch)]">
-                      Favorit für den Band-Stream
-                    </span>
-                  )}
-                  <p className="font-semibold text-white truncate">{song.title}</p>
-                  {song.spotifyUrl && (
-                    <p className="text-xs text-[#1db954]">Mit Spotify-Link</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 sm:gap-3">
-                  {song.spotifyUrl && (
-                    <a
-                      href={song.spotifyUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded-lg border border-[#1db954]/40 bg-[#1db954]/15 px-3 py-2 text-sm font-semibold text-[#1db954] transition hover:bg-[#1db954]/25"
-                    >
-                      ▶ Spotify
-                    </a>
-                  )}
-                  <span className="min-w-[3ch] text-right font-[family-name:var(--font-display)] text-lg font-bold text-[var(--color-mw-green)]">
-                    {song.votes}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleVote(song.id)}
-                    disabled={voted}
-                    className={`rounded-lg px-4 py-2 text-sm font-bold transition ${
-                      voted
-                        ? "cursor-not-allowed bg-[#21262d] text-[#484f58]"
-                        : "bg-[var(--color-mw-green)] text-[#0d1117] hover:brightness-110"
-                    }`}
-                  >
-                    {voted ? "✓ Vote" : "▲ Vote"}
-                  </button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+        </p>
 
-      {songs.length > 0 && onSuggestClick && (
-        <button
-          type="button"
-          onClick={onSuggestClick}
-          className="mt-4 w-full text-center text-sm text-[var(--color-mw-green)] hover:underline"
-        >
-          + Eigenen Song einreichen
-        </button>
-      )}
-    </div>
+        {voteError && (
+          <p className="mb-4 rounded-lg bg-red-950/50 px-3 py-2 text-sm text-red-300">
+            {voteError}
+          </p>
+        )}
+
+        {songs.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-[var(--color-mw-green)]/40 bg-[var(--color-mw-green)]/5 py-10 text-center">
+            <p className="text-lg font-semibold text-white">
+              Die Hitparade wartet auf dich
+            </p>
+            <p className="mt-2 text-sm text-[#8b949e]">
+              Erster Song = maximale Sichtbarkeit. Dauert eine Minute.
+            </p>
+            {onSuggestClick && (
+              <button
+                type="button"
+                onClick={onSuggestClick}
+                className="mt-6 rounded-xl bg-[var(--color-mw-green)] px-6 py-3 font-bold text-[#0d1117]"
+              >
+                Jetzt ersten Song einreichen
+              </button>
+            )}
+          </div>
+        ) : (
+          <ul className="space-y-3">
+            {songs.map((song, index) => {
+              const voted = votedIds.includes(song.id);
+              const rank = index + 1;
+              const isPending = pendingVote?.songId === song.id && submitting;
+              return (
+                <li
+                  key={song.id}
+                  className={`flex flex-wrap items-center gap-3 rounded-xl border px-4 py-4 transition ${
+                    rank === 1
+                      ? "border-[var(--color-twitch)]/50 bg-[var(--color-twitch)]/10 animate-pulse-glow"
+                      : "border-[var(--color-border)] bg-[#0d1117]/60"
+                  }`}
+                >
+                  <span className="w-10 text-center text-lg font-bold text-[#8b949e]">
+                    {rankEmoji(rank)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    {rank === 1 && (
+                      <span className="mb-1 inline-block rounded text-[10px] font-bold uppercase tracking-wide text-[var(--color-twitch)]">
+                        Favorit für den Band-Stream
+                      </span>
+                    )}
+                    <p className="font-semibold text-white truncate">
+                      {song.title}
+                    </p>
+                    {song.spotifyUrl && (
+                      <p className="text-xs text-[#1db954]">Mit Spotify-Link</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    {song.spotifyUrl && (
+                      <a
+                        href={song.spotifyUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-lg border border-[#1db954]/40 bg-[#1db954]/15 px-3 py-2 text-sm font-semibold text-[#1db954] transition hover:bg-[#1db954]/25"
+                      >
+                        ▶ Spotify
+                      </a>
+                    )}
+                    <span className="min-w-[3ch] text-right font-[family-name:var(--font-display)] text-lg font-bold text-[var(--color-mw-green)]">
+                      {song.votes}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleVoteClick(song)}
+                      disabled={voted || submitting}
+                      className={`rounded-lg px-4 py-2 text-sm font-bold transition ${
+                        voted
+                          ? "cursor-not-allowed bg-[#21262d] text-[#484f58]"
+                          : isPending
+                            ? "cursor-wait bg-[var(--color-mw-green)]/60 text-[#0d1117]"
+                            : "bg-[var(--color-mw-green)] text-[#0d1117] hover:brightness-110"
+                      }`}
+                    >
+                      {voted ? "✓ Vote" : isPending ? "…" : "▲ Vote"}
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        {songs.length > 0 && onSuggestClick && (
+          <button
+            type="button"
+            onClick={onSuggestClick}
+            className="mt-4 w-full text-center text-sm text-[var(--color-mw-green)] hover:underline"
+          >
+            + Eigenen Song einreichen
+          </button>
+        )}
+      </div>
+    </>
   );
 }

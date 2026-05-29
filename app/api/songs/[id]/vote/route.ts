@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import { getClientIp, isValidUuid, readJsonBody } from "@/lib/security";
 import { voteSong } from "@/lib/store";
+import { isTurnstileEnabled, verifyTurnstileToken } from "@/lib/turnstile";
 import {
   getVoterIdFromRequest,
   hashClientIp,
@@ -46,6 +47,21 @@ export async function POST(
 
   if (bodyVoterId && bodyVoterId !== voterId) {
     return NextResponse.json({ error: "Ungültige Voter-Session." }, { status: 403 });
+  }
+
+  if (isTurnstileEnabled()) {
+    const turnstileToken =
+      typeof body.turnstileToken === "string" ? body.turnstileToken.trim() : "";
+    if (!turnstileToken) {
+      return NextResponse.json(
+        { error: "Captcha fehlt — bitte erneut voten und bestätigen." },
+        { status: 400 }
+      );
+    }
+    const captcha = await verifyTurnstileToken(turnstileToken, ip);
+    if (!captcha.ok) {
+      return NextResponse.json({ error: captcha.error }, { status: 403 });
+    }
   }
 
   const result = await voteSong(id, voterId, ipKey);
