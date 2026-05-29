@@ -10,11 +10,11 @@ Community-Songvote zum Mittwald-Stream **„Live aus dem Maschinenraum: Containe
 |--------|----------------|
 | **Twitch-Mission** | Live-Follower-Zähler mit Fortschrittsbalken (Ziel: 250, Meilenstein 100) |
 | **Songwünsche** | Titel (Pflicht) + optionaler Spotify-Link |
-| **Hitparade** | Upvoting, eine Stimme pro Song und Browser |
+| **Hitparade** | Upvoting mit Cloudflare Turnstile, eine Stimme pro Song und Browser |
 | **Conversion-UI** | Klare CTAs, Dringlichkeit, 3-Schritte-Funnel, Sticky-Leiste (Mobile) |
 | **Admin** | Login unter `/admin` — Songs löschen |
 | **Impressum** | `/impressum` |
-| **Sicherheit** | Rate-Limits, Input-Sanitizing, CSP, signierte Admin-Session — siehe `SECURITY.md` |
+| **Sicherheit** | Turnstile (Votes), Rate-Limits, CSP, signierte Sessions — siehe `SECURITY.md` |
 
 Keine Demo-Daten: Songs und Votes kommen nur von echten Nutzer:innen.
 
@@ -67,6 +67,17 @@ TWITCH_CHANNEL=mittwaldhosting
 ```
 
 Ohne Credentials: Follower-Zahl über öffentlichen Endpunkt (gecacht 5 Min.).
+
+### Turnstile (Votes, empfohlen in Production)
+
+Kostenlos bei [Cloudflare Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile) — Widget „Managed“ anlegen, Domain eintragen:
+
+```bash
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=...
+TURNSTILE_SECRET_KEY=...
+```
+
+Lokal ohne Keys: automatische Test-Keys (Captcha erscheint, bestätigt immer). In Production beide Keys setzen, sonst sind Votes blockiert.
 
 ### Persistenz
 

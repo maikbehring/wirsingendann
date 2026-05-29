@@ -10,7 +10,7 @@ Audit-Stand: Mai 2026 · Fun-Projekt mit bewusst einfachen Trade-offs.
 | **Clickjacking** | `X-Frame-Options: DENY`, CSP `frame-ancestors 'none'` |
 | **MIME-Sniffing** | `X-Content-Type-Options: nosniff` |
 | **Headers (Prod)** | CSP, HSTS, `Referrer-Policy`, kein `X-Powered-By` |
-| **Vote-Schutz** | Signiertes httpOnly-Cookie + IP-Key (1× pro Song) |
+| **Vote-Schutz** | Signiertes httpOnly-Cookie + IP-Key (1× pro Song) + **Cloudflare Turnstile** |
 | **API-Spam** | Rate-Limits (Songs, Votes, Admin-Login, Admin-Delete) |
 | **Inputs** | UUID-Format, JSON max. 4 KB, Song-/Vote-Limits |
 | **Admin** | httpOnly-Cookie, HMAC-Session, `timingSafeEqual`, SameSite=strict |
@@ -36,7 +36,7 @@ Audit-Stand: Mai 2026 · Fun-Projekt mit bewusst einfachen Trade-offs.
 | Risiko | Details |
 |--------|---------|
 | **Admin-Endpunkt sichtbar** | `/admin`, `/api/admin/me` → erkennbar, dass Admin existiert |
-| **Kein CAPTCHA** | Bots können innerhalb der Limits voten/eintragen |
+| **Song-Einträge ohne CAPTCHA** | Nur Votes sind durch Turnstile geschützt |
 | **Twitch Fallback** | decapi.me als Drittanbieter (kein Secret nötig) |
 | **npm audit** | Moderate Advisory in transitive `postcss` (Next-Bundle) — Build-Tool, kein Runtime-User-CSS |
 
@@ -45,6 +45,7 @@ Audit-Stand: Mai 2026 · Fun-Projekt mit bewusst einfachen Trade-offs.
 - [ ] `ADMIN_PASSWORD` + separates **`ADMIN_SECRET`** (lang, zufällig)
 - [ ] `TRUST_PROXY=true` nur wenn Reverse-Proxy Client-IP setzt
 - [ ] `VOTER_SECRET` setzen (eigenes Random-Secret)
+- [ ] `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` (Cloudflare Turnstile)
 - [ ] TLS am Proxy, HSTS greift automatisch in Production
 - [ ] Volume `data/` mit restriktiven Rechten
 - [ ] Secrets nur als Env, nicht im Image
@@ -55,7 +56,7 @@ Audit-Stand: Mai 2026 · Fun-Projekt mit bewusst einfachen Trade-offs.
 | Route | Auth | Rate-Limit |
 |-------|------|------------|
 | `POST /api/songs` | — | 8/h pro IP-Key |
-| `POST /api/songs/[id]/vote` | Voter-Cookie | 12/min pro IP-Key |
+| `POST /api/songs/[id]/vote` | Voter-Cookie + Turnstile-Token | 12/min pro IP-Key |
 | `POST /api/admin/login` | Passwort | 5/15 min |
 | `DELETE /api/songs/[id]` | Admin-Cookie | 30/min |
 | `GET/PATCH /api/admin/settings` | Admin-Cookie | PATCH: 20/min |

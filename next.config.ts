@@ -7,16 +7,19 @@ function buildCsp(): string {
   const scriptSrc = isDev
     ? "'self' 'unsafe-inline' 'unsafe-eval'"
     : "'self' 'unsafe-inline'";
+  const turnstile = "https://challenges.cloudflare.com";
+  const scriptSrcWithTurnstile = `${scriptSrc} ${turnstile}`;
   const connectSrc = isDev
-    ? "'self' ws: wss: http://localhost:* http://127.0.0.1:*"
-    : "'self'";
+    ? `'self' ws: wss: http://localhost:* http://127.0.0.1:* ${turnstile}`
+    : `'self' ${turnstile}`;
 
   return [
     "default-src 'self'",
-    `script-src ${scriptSrc}`,
+    `script-src ${scriptSrcWithTurnstile}`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     `connect-src ${connectSrc}`,
+    `frame-src ${turnstile}`,
     "img-src 'self' data:",
     "frame-ancestors 'none'",
     "base-uri 'self'",
