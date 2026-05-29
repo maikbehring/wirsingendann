@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AccomplishedBanner } from "./AccomplishedBanner";
 import { ConversionHero } from "./ConversionHero";
 import { GoalCelebration } from "./GoalCelebration";
 import { FinalCta } from "./FinalCta";
@@ -11,6 +12,7 @@ import { SongForm } from "./SongForm";
 import { SongList } from "./SongList";
 import { StickyCta } from "./StickyCta";
 import { Ticker } from "./Ticker";
+import { FOLLOWER_GOAL } from "@/lib/milestones";
 
 interface Stats {
   followerCurrent: number | null;
@@ -35,7 +37,7 @@ export function HomePage() {
   const [statsLoading, setStatsLoading] = useState(true);
   const [stats, setStats] = useState<Stats>({
     followerCurrent: null,
-    followerGoal: 100,
+    followerGoal: FOLLOWER_GOAL,
     followerChannel: "mittwaldhosting",
     followerFetchedAt: null,
     twitchUrl: "https://www.twitch.tv/mittwaldhosting",
@@ -50,7 +52,7 @@ export function HomePage() {
       .then((data) => {
         setStats({
           followerCurrent: data.followerCurrent ?? null,
-          followerGoal: data.followerGoal ?? 100,
+          followerGoal: data.followerGoal ?? FOLLOWER_GOAL,
           followerChannel: data.followerChannel ?? "mittwaldhosting",
           followerFetchedAt: data.followerFetchedAt ?? null,
           followerError: data.followerError,
@@ -88,10 +90,9 @@ export function HomePage() {
     <div className="gradient-maschinenraum min-h-screen pb-24 md:pb-0">
       <Ticker />
 
-      <GoalCelebration
-        active={!statsLoading && Boolean(stats.goalReached)}
-        leaderTitle={stats.leaderTitle}
-      />
+      <GoalCelebration active={!statsLoading && Boolean(stats.goalReached)} />
+
+      <AccomplishedBanner />
 
       <div className="relative">
         <div className="pointer-events-none absolute inset-0 grid-bg" />
@@ -123,17 +124,17 @@ export function HomePage() {
           <div className="grid gap-3 sm:grid-cols-3">
             {[
               {
-                label: "Follower live",
+                label: "Follower (Band-Mission)",
                 value: statsLoading ? "…" : (stats.followerCurrent ?? "—"),
                 sub: stats.followerSimulated
-                  ? "Admin-Simulation aktiv"
+                  ? "Simulation"
                   : `Ziel: ${stats.followerGoal}`,
                 highlight: true,
               },
               {
                 label: "Songwünsche",
                 value: statsLoading ? "…" : stats.songCount,
-                sub: stats.songCount === 0 ? "Sei der Erste!" : "in der Hitparade",
+                sub: "für den nächsten Stream",
               },
               {
                 label: "Community-Votes",
@@ -163,10 +164,13 @@ export function HomePage() {
           <section id="mitmachen" aria-labelledby="mitmachen-heading">
             <h2
               id="mitmachen-heading"
-              className="font-[family-name:var(--font-display)] mb-6 text-center text-2xl font-bold text-white"
+              className="font-[family-name:var(--font-display)] mb-2 text-center text-2xl font-bold text-white"
             >
-              Jetzt mitmachen
+              Hitparade — nächster Stream
             </h2>
+            <p className="mb-6 text-center text-sm text-[#8b949e]">
+              Stimmt ab, welcher Song im Maschinenraum mit Band laufen soll.
+            </p>
             <div className="grid gap-8 lg:grid-cols-2">
               <div className="order-1">
                 <SongForm
@@ -185,15 +189,15 @@ export function HomePage() {
 
           <section className="rounded-2xl border border-dashed border-[var(--color-border)] p-6 text-center text-sm text-[#8b949e]">
             <p className="mb-2 font-semibold text-[#c9d1d9]">
-              Stream am 28.05.2026 · 14–17 Uhr
+              Nächster Stream · voraussichtlich Juli 2026
             </p>
             <p>
-              Roadmap · Kundenlive · KI-Stunde — interaktiv, kein Vortrag. Du
-              stellst Fragen, wir antworten live.
+              Nach <strong className="text-white">Head in the Cloud</strong> geht
+              es im Maschinenraum weiter — interaktiv wie gewohnt, dann hoffentlich
+              mit voller Band auf der Bühne.
             </p>
             <p className="mt-4 italic text-[var(--color-twitch)]">
-              „VON SINGEN HAB ICH NIX GESAGT“ — Josefine (trotzdem wird’s
-              lustig)
+              Termin folgt auf Twitch & LinkedIn — bleibt dran!
             </p>
           </section>
 

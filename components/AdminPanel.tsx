@@ -207,21 +207,24 @@ export function AdminPanel() {
 
       <section className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
         <h3 className="font-[family-name:var(--font-display)] font-bold text-white">
-          100-Follower simulieren
+          250-Follower simulieren (Band)
         </h3>
         <p className="mt-1 text-sm text-[#8b949e]">
-          Zeigt auf der Startseite Konfetti + Erfolgs-Banner — nur für Tests/Vorschau.
+          Zeigt Konfetti + Band-Mission erfüllt — nur für Tests/Vorschau.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
             disabled={settingsLoading}
             onClick={() =>
-              patchSettings({ simulateGoalReached: true }, "100 Follower simuliert — Startseite öffnen")
+              patchSettings(
+                { simulateGoalReached: true },
+                "250 Follower simuliert — Startseite öffnen"
+              )
             }
             className="rounded-lg bg-[var(--color-mw-green)] px-4 py-2 text-sm font-bold text-[#0d1117] disabled:opacity-50"
           >
-            100 Follower simulieren
+            250 Follower simulieren
           </button>
           <button
             type="button"

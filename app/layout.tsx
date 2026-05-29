@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "wirsingendann.de — Songwünsche für Fine & Maik",
+  title: "wirsingendann.de — Angels war erst der Anfang",
   description:
-    "100 Twitch-Follower = ein Lied eurer Wahl. Stimmt ab für den Maschinenraum-Song!",
+    "100 Follower geschafft — Angels gesungen. Nächstes Ziel: 250 Follower, dann Band im Maschinenraum-Stream.",
   openGraph: {
     title: "wirsingendann.de",
-    description: "Live aus dem Maschinenraum — wer singt, entscheidet ihr.",
+    description:
+      "Road to 250 — Band-Auftritt im nächsten Stream nach Head in the Cloud.",
   },
 };
 

@@ -106,7 +106,7 @@ export function SongList({ refreshKey, onSuggestClick }: SongListProps) {
             — hol deinen Song nach oben!
           </>
         ) : (
-          "Noch leer — der erste Eintrag hat die besten Chancen aufs Sing-Duell."
+          "Noch leer — der erste Eintrag hat die besten Chancen für den Band-Stream."
         )}
       </p>
 
@@ -154,7 +154,7 @@ export function SongList({ refreshKey, onSuggestClick }: SongListProps) {
                 <div className="min-w-0 flex-1">
                   {rank === 1 && (
                     <span className="mb-1 inline-block rounded text-[10px] font-bold uppercase tracking-wide text-[var(--color-twitch)]">
-                      Aktueller Favorit fürs Singen
+                      Favorit für den Band-Stream
                     </span>
                   )}
                   <p className="font-semibold text-white truncate">{song.title}</p>
