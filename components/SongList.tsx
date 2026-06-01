@@ -22,12 +22,14 @@ export function SongList({ refreshKey, onSuggestClick }: SongListProps) {
   const [loading, setLoading] = useState(true);
   const [votedIds, setVotedIds] = useState<string[]>([]);
   const [voteError, setVoteError] = useState<string | null>(null);
-  const [turnstileSiteKey, setTurnstileSiteKey] = useState<string | null>(null);
+  const [captchaSiteKey, setCaptchaSiteKey] = useState<string | null>(null);
+  const [captchaRegion, setCaptchaRegion] = useState<"eu" | "global">("eu");
   const [captchaEnabled, setCaptchaEnabled] = useState(false);
   const [pendingVote, setPendingVote] = useState<{
     songId: string;
     title: string;
   } | null>(null);
+  const [captchaSessionKey, setCaptchaSessionKey] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async () => {
@@ -45,17 +47,26 @@ export function SongList({ refreshKey, onSuggestClick }: SongListProps) {
     setVotedIds(getVotedSongIds());
     ensureVoterSession().catch(() => {});
     load();
-    fetch("/api/turnstile/config", { cache: "no-store" })
+    fetch("/api/captcha/config", { cache: "no-store" })
       .then((r) => r.json())
-      .then((data: { enabled?: boolean; siteKey?: string | null }) => {
-        setCaptchaEnabled(Boolean(data.enabled && data.siteKey));
-        setTurnstileSiteKey(data.siteKey ?? null);
-      })
+      .then(
+        (data: {
+          enabled?: boolean;
+          siteKey?: string | null;
+          region?: "eu" | "global";
+        }) => {
+          setCaptchaEnabled(Boolean(data.enabled && data.siteKey));
+          setCaptchaSiteKey(data.siteKey ?? null);
+          if (data.region === "global" || data.region === "eu") {
+            setCaptchaRegion(data.region);
+          }
+        }
+      )
       .catch(() => {});
   }, [load, refreshKey]);
 
   const submitVote = useCallback(
-    async (songId: string, turnstileToken?: string) => {
+    async (songId: string, captchaToken?: string) => {
       setVoteError(null);
       setSubmitting(true);
       let voterId: string;
@@ -68,7 +79,7 @@ export function SongList({ refreshKey, onSuggestClick }: SongListProps) {
       }
 
       const body: Record<string, string> = { voterId };
-      if (turnstileToken) body.turnstileToken = turnstileToken;
+      if (captchaToken) body.captchaToken = captchaToken;
 
       try {
         const res = await fetch(`/api/songs/${songId}/vote`, {
@@ -107,7 +118,8 @@ export function SongList({ refreshKey, onSuggestClick }: SongListProps) {
     if (votedIds.includes(song.id) || submitting) return;
     setVoteError(null);
 
-    if (captchaEnabled && turnstileSiteKey) {
+    if (captchaEnabled && captchaSiteKey) {
+      setCaptchaSessionKey(`${song.id}-${Date.now()}`);
       setPendingVote({ songId: song.id, title: song.title });
       return;
     }
@@ -137,7 +149,9 @@ export function SongList({ refreshKey, onSuggestClick }: SongListProps) {
     <>
       <VoteCaptchaModal
         open={pendingVote !== null}
-        siteKey={turnstileSiteKey ?? ""}
+        sessionKey={captchaSessionKey}
+        siteKey={captchaSiteKey ?? ""}
+        region={captchaRegion}
         songTitle={pendingVote?.title ?? null}
         onClose={() => !submitting && setPendingVote(null)}
         onVerified={handleCaptchaVerified}

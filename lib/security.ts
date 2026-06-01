@@ -2,6 +2,8 @@ const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const MAX_BODY_BYTES = 4096;
+/** Friendly Captcha-Response bis 16 KB — Vote-Body braucht etwas Puffer. */
+export const MAX_VOTE_BODY_BYTES = 20_480;
 
 /** Steuerzeichen & HTML-Tags entfernen (Stored-XSS-Schutz). */
 export function sanitizeText(
@@ -20,10 +22,11 @@ export function isValidUuid(id: string): boolean {
 }
 
 export async function readJsonBody(
-  request: Request
+  request: Request,
+  maxBytes: number = MAX_BODY_BYTES
 ): Promise<{ ok: true; data: unknown } | { ok: false; status: number; error: string }> {
   const length = request.headers.get("content-length");
-  if (length && parseInt(length, 10) > MAX_BODY_BYTES) {
+  if (length && parseInt(length, 10) > maxBytes) {
     return { ok: false, status: 413, error: "Anfrage zu groß." };
   }
 
@@ -34,7 +37,7 @@ export async function readJsonBody(
     return { ok: false, status: 400, error: "Ungültige Anfrage." };
   }
 
-  if (raw.length > MAX_BODY_BYTES) {
+  if (raw.length > maxBytes) {
     return { ok: false, status: 413, error: "Anfrage zu groß." };
   }
 

@@ -10,11 +10,11 @@ Community-Songvote zum Mittwald-Stream **„Live aus dem Maschinenraum: Containe
 |--------|----------------|
 | **Twitch-Mission** | Live-Follower-Zähler mit Fortschrittsbalken (Ziel: 250, Meilenstein 100) |
 | **Songwünsche** | Titel (Pflicht) + optionaler Spotify-Link |
-| **Hitparade** | Upvoting mit Cloudflare Turnstile, eine Stimme pro Song und Browser |
+| **Hitparade** | Upvoting mit Friendly Captcha (EU), eine Stimme pro Song und Browser |
 | **Conversion-UI** | Klare CTAs, Dringlichkeit, 3-Schritte-Funnel, Sticky-Leiste (Mobile) |
 | **Admin** | Login unter `/admin` — Songs löschen |
 | **Impressum** | `/impressum` |
-| **Sicherheit** | Turnstile (Votes), Rate-Limits, CSP, signierte Sessions — siehe `SECURITY.md` |
+| **Sicherheit** | Friendly Captcha (Votes), Rate-Limits, CSP, signierte Sessions — siehe `SECURITY.md` |
 
 Keine Demo-Daten: Songs und Votes kommen nur von echten Nutzer:innen.
 
@@ -68,16 +68,19 @@ TWITCH_CHANNEL=mittwaldhosting
 
 Ohne Credentials: Follower-Zahl über öffentlichen Endpunkt (gecacht 5 Min.).
 
-### Turnstile (Votes, empfohlen in Production)
+### Friendly Captcha (Votes, empfohlen in Production)
 
-Kostenlos bei [Cloudflare Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile) — Widget „Managed“ anlegen, Domain eintragen:
+Kostenlose Testphase bei [Friendly Captcha](https://friendlycaptcha.com/) (deutscher Anbieter, EU-Endpoint) — Sitekey + API-Key anlegen:
 
 ```bash
-NEXT_PUBLIC_TURNSTILE_SITE_KEY=...
-TURNSTILE_SECRET_KEY=...
+NEXT_PUBLIC_FRIENDLY_CAPTCHA_SITE_KEY=...
+FRIENDLY_CAPTCHA_API_KEY=...
+FRIENDLY_CAPTCHA_REGION=eu
 ```
 
-Lokal ohne Keys: automatische Test-Keys (Captcha erscheint, bestätigt immer). In Production beide Keys setzen, sonst sind Votes blockiert.
+Ohne Keys ist das Captcha deaktiviert (Votes nur mit Rate-Limits). In Production beide Keys setzen.
+
+**Lokal:** Im Friendly-Captcha-Dashboard unter der Application die Domains `127.0.0.1` und `localhost` eintragen — sonst schlägt `/activate` mit 403 fehl.
 
 ### Persistenz
 

@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
-import { getClientIp, isValidUuid, readJsonBody } from "@/lib/security";
+import {
+  getClientIp,
+  isValidUuid,
+  MAX_VOTE_BODY_BYTES,
+  readJsonBody,
+} from "@/lib/security";
 import { voteSong } from "@/lib/store";
-import { isTurnstileEnabled, verifyTurnstileToken } from "@/lib/turnstile";
+import {
+  isFriendlyCaptchaEnabled,
+  verifyFriendlyCaptchaToken,
+} from "@/lib/friendly-captcha";
 import {
   getVoterIdFromRequest,
   hashClientIp,
@@ -36,7 +44,7 @@ export async function POST(
     return rateLimitResponse(ipLimit.retryAfterSec ?? 30);
   }
 
-  const parsed = await readJsonBody(request);
+  const parsed = await readJsonBody(request, MAX_VOTE_BODY_BYTES);
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: parsed.status });
   }
@@ -49,16 +57,20 @@ export async function POST(
     return NextResponse.json({ error: "Ungültige Voter-Session." }, { status: 403 });
   }
 
-  if (isTurnstileEnabled()) {
-    const turnstileToken =
-      typeof body.turnstileToken === "string" ? body.turnstileToken.trim() : "";
-    if (!turnstileToken) {
+  if (isFriendlyCaptchaEnabled()) {
+    const captchaToken =
+      typeof body.captchaToken === "string"
+        ? body.captchaToken.trim()
+        : typeof body.turnstileToken === "string"
+          ? body.turnstileToken.trim()
+          : "";
+    if (!captchaToken) {
       return NextResponse.json(
         { error: "Captcha fehlt — bitte erneut voten und bestätigen." },
         { status: 400 }
       );
     }
-    const captcha = await verifyTurnstileToken(turnstileToken, ip);
+    const captcha = await verifyFriendlyCaptchaToken(captchaToken);
     if (!captcha.ok) {
       return NextResponse.json({ error: captcha.error }, { status: 403 });
     }

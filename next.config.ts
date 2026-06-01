@@ -7,19 +7,21 @@ function buildCsp(): string {
   const scriptSrc = isDev
     ? "'self' 'unsafe-inline' 'unsafe-eval'"
     : "'self' 'unsafe-inline'";
-  const turnstile = "https://challenges.cloudflare.com";
-  const scriptSrcWithTurnstile = `${scriptSrc} ${turnstile}`;
+  // Friendly Captcha lädt Agent/Widget-Iframes von mehreren EU-Hosts
+  const frcapi =
+    "https://eu.frcapi.com https://eu0.frcapi.com https://eu1.frcapi.com " +
+    "https://global.frcapi.com https://global0.frcapi.com https://global1.frcapi.com";
   const connectSrc = isDev
-    ? `'self' ws: wss: http://localhost:* http://127.0.0.1:* ${turnstile}`
-    : `'self' ${turnstile}`;
+    ? `'self' ws: wss: http://localhost:* http://127.0.0.1:* ${frcapi}`
+    : `'self' ${frcapi}`;
 
   return [
     "default-src 'self'",
-    `script-src ${scriptSrcWithTurnstile}`,
+    `script-src ${scriptSrc}`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     `connect-src ${connectSrc}`,
-    `frame-src ${turnstile}`,
+    `frame-src 'self' ${frcapi}`,
     "img-src 'self' data:",
     "frame-ancestors 'none'",
     "base-uri 'self'",
