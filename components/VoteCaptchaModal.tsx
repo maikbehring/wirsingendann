@@ -1,34 +1,57 @@
 "use client";
 
-import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  FriendlyCaptchaWidget,
+  type FriendlyCaptchaWidgetRef,
+} from "./FriendlyCaptchaWidget";
+import type { FriendlyCaptchaRegion } from "@/lib/friendly-captcha";
 
 interface VoteCaptchaModalProps {
   open: boolean;
+  sessionKey: string;
   siteKey: string;
+  region?: FriendlyCaptchaRegion;
   songTitle: string | null;
   onClose: () => void;
   onVerified: (token: string) => void;
 }
 
+function captchaErrorMessage(error?: {
+  code?: string;
+  detail?: string;
+}): string {
+  const code = String(error?.code ?? "");
+  const detail = error?.detail ?? "";
+
+  if (
+    code.includes("403") ||
+    detail.includes("403") ||
+    detail.toLowerCase().includes("activate") ||
+    detail.toLowerCase().includes("domain")
+  ) {
+    return (
+      "Captcha konnte nicht starten (403). Im Friendly-Captcha-Dashboard " +
+      "127.0.0.1 und localhost als Domain eintragen."
+    );
+  }
+
+  return "Captcha konnte nicht geladen werden — Seite neu laden.";
+}
+
 export function VoteCaptchaModal({
   open,
+  sessionKey,
   siteKey,
+  region = "eu",
   songTitle,
   onClose,
   onVerified,
 }: VoteCaptchaModalProps) {
-  const turnstileRef = useRef<TurnstileInstance>(null);
+  const widgetRef = useRef<FriendlyCaptchaWidgetRef>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!open) {
-      setError(null);
-      turnstileRef.current?.reset();
-    }
-  }, [open]);
-
-  const handleSuccess = useCallback(
+  const handleComplete = useCallback(
     (token: string) => {
       setError(null);
       onVerified(token);
@@ -45,7 +68,7 @@ export function VoteCaptchaModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || !siteKey) return null;
 
   return (
     <div
@@ -83,7 +106,7 @@ export function VoteCaptchaModal({
           Vote für {songTitle ? `„${songTitle}"` : "diesen Song"}
         </h2>
         <p className="mt-2 text-sm text-[#8b949e]">
-          Ein Klick — damit Bots nicht die Hitparade manipulieren können.
+          Privacy-first — damit Bots nicht die Hitparade manipulieren können.
         </p>
 
         {error && (
@@ -92,28 +115,23 @@ export function VoteCaptchaModal({
           </p>
         )}
 
-        <div className="mt-6 flex min-h-[65px] justify-center">
-          <Turnstile
-            ref={turnstileRef}
-            siteKey={siteKey}
-            onSuccess={handleSuccess}
-            onError={() =>
-              setError("Captcha konnte nicht geladen werden — Seite neu laden.")
-            }
+        <div className="mt-6 flex justify-center">
+          <FriendlyCaptchaWidget
+            key={sessionKey}
+            ref={widgetRef}
+            sitekey={siteKey}
+            region={region}
+            onComplete={handleComplete}
+            onError={(err) => setError(captchaErrorMessage(err))}
             onExpire={() => {
               setError("Captcha abgelaufen — bitte erneut bestätigen.");
-              turnstileRef.current?.reset();
-            }}
-            options={{
-              theme: "dark",
-              size: "normal",
-              language: "de",
+              widgetRef.current?.reset();
             }}
           />
         </div>
 
         <p className="mt-4 text-center text-[10px] text-[#484f58]">
-          Geschützt durch Cloudflare Turnstile
+          Geschützt durch Friendly Captcha · EU
         </p>
       </div>
     </div>
